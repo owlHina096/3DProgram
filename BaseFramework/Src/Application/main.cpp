@@ -221,6 +221,9 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	KdAudioManager::Instance().Init();
 
+	//Fork使用練習用処理（削除必須）
+	m_test = 100;
+
 	return true;
 }
 
