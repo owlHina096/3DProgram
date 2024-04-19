@@ -54,6 +54,10 @@ private:
 	//カメラ
 	std::shared_ptr<KdCamera> m_spCamera = nullptr;
 
+	//ポリゴンデータ
+	std::shared_ptr<KdSquarePolygon> m_spPoly = nullptr;
+	float x, z = 5;
+
 //=====================================================
 // シングルトンパターン
 //=====================================================
