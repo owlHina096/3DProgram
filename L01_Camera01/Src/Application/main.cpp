@@ -80,6 +80,22 @@ void Application::Update()
 	{
 		z -= 0.2f;
 	}
+
+	//カメラ行列の更新
+	{
+		//大きさ
+		Math::Matrix _mScale =
+			Math::Matrix::CreateScale(1.0f);
+		//基準点（ターゲット）からどれだけ離れているか
+		Math::Matrix _mTrans =
+			Math::Matrix::CreateTranslation(0, 6, 0);
+		//どれだけ傾けているか
+		Math::Matrix _mRotation =
+			Math::Matrix::CreateRotationX(DirectX::XMConvertToRadians(45));
+		//カメラのワールド行列を作成、適応させる
+		Math::Matrix _mWorld = _mScale * _mRotation * _mTrans;		//行列合成
+		m_spCamera->SetCameraMatrix(_mWorld);
+	}
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -136,9 +152,14 @@ void Application::Draw()
 	// 陰影のあるオブジェクト(不透明な物体や2Dキャラ)はBeginとEndの間にまとめてDrawする
 	KdShaderManager::Instance().m_StandardShader.BeginLit();
 	{
-		//Math::Matrix _mat = Math::Matrix::CreateTranslation(x, 0, z);
-		Math::Matrix _mat = Math::Matrix::CreateTranslation(0, 0, 5);
+		//ポリゴンの描画
+		Math::Matrix _mat = /*Math::Matrix::Identity;
+		_mat._43 = 5;*/
+			Math::Matrix::CreateTranslation(x, 0, z);
 		KdShaderManager::Instance().m_StandardShader.DrawPolygon(*m_spPoly, _mat);
+
+		//地形の描画
+		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel);
 	}
 	KdShaderManager::Instance().m_StandardShader.EndLit();
 
@@ -248,7 +269,13 @@ bool Application::Init(int w, int h)
 	m_spPoly = std::make_shared<KdSquarePolygon>();
 	m_spPoly->
 		SetMaterial("Asset/Data/LessonData/Character/Hamu.png");
+	m_spPoly->
+		SetPivot(KdSquarePolygon::PivotType::Center_Bottom);
 
+	//地形の初期化
+	m_spModel = std::make_shared<KdModelData>();
+	m_spModel->Load("Asset/Data/LessonData/Terrain/Terrain.gltf");
+	
 	return true;
 }
 
