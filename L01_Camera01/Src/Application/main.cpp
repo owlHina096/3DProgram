@@ -1,5 +1,8 @@
 ﻿#include "main.h"
 
+#include "Hamutaro.h"
+#include "Terrain.h"
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // エントリーポイント
 // アプリケーションはこの関数から進行する
@@ -64,37 +67,36 @@ void Application::PreUpdate()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Application::Update()
 {
-	if (GetKeyState('A') & 0x8000)
-	{
-		x -= 0.2f;
-	}
-	if (GetKeyState('D') & 0x8000)
-	{
-		x += 0.2f;
-	}
-	if (GetKeyState('W') & 0x8000)
-	{
-		z += 0.2f;
-	}
-	if (GetKeyState('S') & 0x8000)
-	{
-		z -= 0.2f;
-	}
-
 	//カメラ行列の更新
 	{
 		//大きさ
 		Math::Matrix _mScale =
 			Math::Matrix::CreateScale(1.0f);
+
+		//どれだけ傾けているか
+		Math::Matrix _mRotationX =
+			Math::Matrix::CreateRotationX(DirectX::XMConvertToRadians(45));
+		
+		static float dig = 0;
+		//dig += 0.5f;
+		Math::Matrix _mRotationY =
+			Math::Matrix::CreateRotationY(DirectX::XMConvertToRadians(dig));
+
 		//基準点（ターゲット）からどれだけ離れているか
 		Math::Matrix _mTrans =
-			Math::Matrix::CreateTranslation(0, 6, 0);
-		//どれだけ傾けているか
-		Math::Matrix _mRotation =
-			Math::Matrix::CreateRotationX(DirectX::XMConvertToRadians(45));
-		//カメラのワールド行列を作成、適応させる
-		Math::Matrix _mWorld = _mScale * _mRotation * _mTrans;		//行列合成
+			Math::Matrix::CreateTranslation(0, 6, -5);
+		
+		//カメラのワールド行列を作成、適応させる(行列の親子関係)
+		Math::Matrix _mWorld = (_mScale * _mRotationX * _mTrans * _mRotationY);	//行列合成
 		m_spCamera->SetCameraMatrix(_mWorld);
+	}
+
+	//全ゲームオブジェクトの更新
+	{
+		for (std::shared_ptr<KdGameObject> gameObj : m_GameObjList)
+		{
+			gameObj->Update();
+		}
 	}
 }
 
@@ -152,14 +154,12 @@ void Application::Draw()
 	// 陰影のあるオブジェクト(不透明な物体や2Dキャラ)はBeginとEndの間にまとめてDrawする
 	KdShaderManager::Instance().m_StandardShader.BeginLit();
 	{
-		//ポリゴンの描画
-		Math::Matrix _mat = /*Math::Matrix::Identity;
-		_mat._43 = 5;*/
-			Math::Matrix::CreateTranslation(x, 0, z);
-		KdShaderManager::Instance().m_StandardShader.DrawPolygon(*m_spPoly, _mat);
-
-		//地形の描画
-		KdShaderManager::Instance().m_StandardShader.DrawModel(*m_spModel);
+		//全ゲームオブジェクトの描画
+		for (std::shared_ptr<KdGameObject> gameObj : m_GameObjList)
+		{
+			gameObj->DrawLit();
+		}
+		
 	}
 	KdShaderManager::Instance().m_StandardShader.EndLit();
 
@@ -210,7 +210,7 @@ bool Application::Init(int w, int h)
 	//===================================================================
 	// ウィンドウ作成
 	//===================================================================
-	if (m_window.Create(w, h, "3D GameProgramming", "Window") == false) {
+	if (m_window.Create(w, h, "L01_Camera01", "Window") == false) {
 		MessageBoxA(nullptr, "ウィンドウ作成に失敗", "エラー", MB_OK);
 		return false;
 	}
@@ -265,17 +265,18 @@ bool Application::Init(int w, int h)
 	//カメラの初期化
 	m_spCamera = std::make_shared<KdCamera>();
 
-	//ポリゴンの初期化
-	m_spPoly = std::make_shared<KdSquarePolygon>();
-	m_spPoly->
-		SetMaterial("Asset/Data/LessonData/Character/Hamu.png");
-	m_spPoly->
-		SetPivot(KdSquarePolygon::PivotType::Center_Bottom);
-
-	//地形の初期化
-	m_spModel = std::make_shared<KdModelData>();
-	m_spModel->Load("Asset/Data/LessonData/Terrain/Terrain.gltf");
+	//ハム太郎初期化
+	std::shared_ptr<Hamu> _Hamu = std::make_shared<Hamu>();
+	_Hamu->Init();
+	//★　重要　★
+	m_GameObjList.push_back(_Hamu);
 	
+	//地形データ初期化
+	std::shared_ptr<Terrain> _Terrain = std::make_shared<Terrain>();
+	_Terrain->Init();
+	//★　重要　★
+	m_GameObjList.push_back(_Terrain);
+
 	return true;
 }
 
